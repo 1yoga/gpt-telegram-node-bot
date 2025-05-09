@@ -8,7 +8,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const userSettings = {};
 
 bot.command('start', (ctx) => {
-  ctx.reply('Привет! Напиши сообщение или используй /setup для настройки модели, температуры и system prompt.');
+  ctx.reply('Привет! Напиши сообщение или используй /setup для настройки модели, temperature и system prompt.');
 });
 
 bot.command('setup', (ctx) => {
@@ -19,12 +19,12 @@ bot.command('setup', (ctx) => {
   return ctx.reply(
     `⚙️ Настройки:
 Модель: ${settings.model}
-Температура: ${settings.temperature}
+Temperature: ${settings.temperature}
 max_tokens: ${settings.max_tokens}`,
     Markup.inlineKeyboard([
       [
         Markup.button.callback('📌 Модель', 'setup_model'),
-        Markup.button.callback('🔥 Температура', 'setup_temperature'),
+        Markup.button.callback('🔥 Temperature', 'setup_temperature'),
       ],
       [
         Markup.button.callback('🔢 Max Tokens', 'setup_tokens'),
@@ -56,7 +56,7 @@ bot.action(/select_model_(.+)/, async (ctx) => {
 
 bot.action('setup_temperature', async (ctx) => {
   await ctx.answerCbQuery();
-  return ctx.editMessageText('Выберите температуру:', Markup.inlineKeyboard([
+  return ctx.editMessageText('Выберите temperature:', Markup.inlineKeyboard([
     ['0.2', '0.5', '0.7', '1.0'].map(temp =>
       Markup.button.callback(temp, `select_temp_${temp}`)
     ),
@@ -68,8 +68,8 @@ bot.action(/select_temp_(.+)/, async (ctx) => {
   const uid = ctx.from.id;
   userSettings[uid] = userSettings[uid] || { ...defaultSettings };
   userSettings[uid].temperature = temp;
-  await ctx.answerCbQuery(`✅ Температура: ${temp}`);
-  return ctx.editMessageText(`Температура установлена: ${temp}`);
+  await ctx.answerCbQuery(`✅ Temperature: ${temp}`);
+  return ctx.editMessageText(`Temperature установлена: ${temp}`);
 });
 
 bot.action('setup_tokens', async (ctx) => {
