@@ -26,7 +26,13 @@ max_tokens: ${settings.max_tokens}`,
         Markup.button.callback('📌 Модель', 'setup_model'),
         Markup.button.callback('🔥 Температура', 'setup_temperature'),
       ],
-      [Markup.button.callback('📝 System prompt', 'setup_system')],
+      [
+        Markup.button.callback('🔢 Max Tokens', 'setup_tokens'),
+        Markup.button.callback('📝 System prompt', 'setup_system'),
+      ],
+      [
+        Markup.button.callback('🔄 Сбросить настройки', 'reset_settings'),
+      ]
     ])
   );
 });
@@ -66,6 +72,24 @@ bot.action(/select_temp_(.+)/, async (ctx) => {
   return ctx.editMessageText(`Температура установлена: ${temp}`);
 });
 
+bot.action('setup_tokens', async (ctx) => {
+  await ctx.answerCbQuery();
+  return ctx.editMessageText('Выберите max_tokens:', Markup.inlineKeyboard([
+    ['512', '1024', '2048', '4096', '8192'].map(val =>
+      Markup.button.callback(val, `select_tokens_${val}`)
+    )
+  ]));
+});
+
+bot.action(/select_tokens_(\d+)/, async (ctx) => {
+  const tokens = parseInt(ctx.match[1]);
+  const uid = ctx.from.id;
+  userSettings[uid] = userSettings[uid] || { ...defaultSettings };
+  userSettings[uid].max_tokens = tokens;
+  await ctx.answerCbQuery(`✅ max_tokens: ${tokens}`);
+  return ctx.editMessageText(`Max tokens установлены: ${tokens}`);
+});
+
 bot.action('setup_system', async (ctx) => {
   const uid = ctx.from.id;
   await ctx.answerCbQuery();
@@ -74,6 +98,13 @@ bot.action('setup_system', async (ctx) => {
     userSettings[uid].system = msgCtx.message.text;
     msgCtx.reply('✅ System prompt установлен!');
   });
+});
+
+bot.action('reset_settings', async (ctx) => {
+  const uid = ctx.from.id;
+  userSettings[uid] = { ...defaultSettings };
+  await ctx.answerCbQuery('Настройки сброшены');
+  return ctx.editMessageText('🔄 Все настройки сброшены к значениям по умолчанию.');
 });
 
 bot.on('text', async (ctx) => {
@@ -90,4 +121,4 @@ bot.on('text', async (ctx) => {
 });
 
 bot.launch();
-console.log('🤖 Бот с UI-настройкой запущен');
+console.log('🤖 Бот с расширенным UI-настройщиком запущен');
