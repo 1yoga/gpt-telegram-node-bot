@@ -1,8 +1,9 @@
-const axios = require('axios');
-const { defaultSettings } = require('./config');
-require('dotenv').config();
+import axios from 'axios';
+import { defaultSettings } from './config.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
-async function chatWithGPT(message, settings = {}) {
+export async function chatWithGPT(message, settings = {}) {
   const payload = {
     model: settings.model || defaultSettings.model,
     temperature: settings.temperature ?? defaultSettings.temperature,
@@ -16,5 +17,3 @@ async function chatWithGPT(message, settings = {}) {
 
   return res.data.choices[0].message.content;
 }
-
-module.exports = { chatWithGPT };

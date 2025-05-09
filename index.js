@@ -1,7 +1,8 @@
-const { Telegraf } = require('telegraf');
-const { chatWithGPT } = require('./openai');
-const { defaultSettings, availableModels } = require('./config');
-require('dotenv').config();
+import { Telegraf } from 'telegraf';
+import { chatWithGPT } from './openai.js';
+import { defaultSettings, availableModels } from './config.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const userSettings = {};
