@@ -1,4 +1,4 @@
-import { Telegraf } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import { chatWithGPT } from './openai.js';
 import { defaultSettings, availableModels } from './config.js';
 import dotenv from 'dotenv';
@@ -8,61 +8,72 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const userSettings = {};
 
 bot.command('start', (ctx) => {
-  ctx.reply(`Привет! Я бот с подключением к GPT. 
-Напиши свой вопрос или используй /settings чтобы задать параметры (model, temperature, max_tokens, system).
-Показать текущие настройки: /settings_show`);
+  ctx.reply('Привет! Напиши сообщение или используй /setup для настройки модели, температуры и system prompt.');
 });
 
-bot.command('settings', (ctx) => {
+bot.command('setup', (ctx) => {
   const uid = ctx.from.id;
   userSettings[uid] = userSettings[uid] || { ...defaultSettings };
 
-  const args = ctx.message.text.split(' ');
-  const key = args[1];
-  const value = args.slice(2).join(' ');
-
-  if (!key || !value) {
-    return ctx.reply(`Используй:
-  /settings model <имя_модели>
-  /settings temperature <0-2>
-  /settings max_tokens <число>
-  /settings system <описание роли>`);
-  }
-
-  if (key === 'model') {
-    if (!availableModels.includes(value)) {
-      return ctx.reply(`Недопустимая модель. Доступные: ${availableModels.join(', ')}`);
-    }
-    userSettings[uid].model = value;
-  } else if (key === 'temperature') {
-    const num = parseFloat(value);
-    if (isNaN(num) || num < 0 || num > 2) {
-      return ctx.reply('Температура должна быть числом от 0 до 2');
-    }
-    userSettings[uid].temperature = num;
-  } else if (key === 'max_tokens') {
-    const num = parseInt(value);
-    if (isNaN(num) || num < 1 || num > 8192) {
-      return ctx.reply('max_tokens должно быть числом от 1 до 8192');
-    }
-    userSettings[uid].max_tokens = num;
-  } else if (key === 'system') {
-    userSettings[uid].system = value;
-  } else {
-    return ctx.reply('Неизвестная настройка. Доступные: model, temperature, max_tokens, system');
-  }
-
-  ctx.reply(`✅ Настройка "${key}" обновлена`);
+  const settings = userSettings[uid];
+  return ctx.reply(
+    `⚙️ Настройки:
+Модель: ${settings.model}
+Температура: ${settings.temperature}
+max_tokens: ${settings.max_tokens}`,
+    Markup.inlineKeyboard([
+      [
+        Markup.button.callback('📌 Модель', 'setup_model'),
+        Markup.button.callback('🔥 Температура', 'setup_temperature'),
+      ],
+      [Markup.button.callback('📝 System prompt', 'setup_system')],
+    ])
+  );
 });
 
-bot.command('settings_show', (ctx) => {
+bot.action('setup_model', async (ctx) => {
+  await ctx.answerCbQuery();
+  return ctx.editMessageText('Выберите модель:', Markup.inlineKeyboard(
+    availableModels.map(model => Markup.button.callback(model, `select_model_${model}`)),
+    { columns: 2 }
+  ));
+});
+
+bot.action(/select_model_(.+)/, async (ctx) => {
+  const model = ctx.match[1];
   const uid = ctx.from.id;
-  const s = userSettings[uid] || defaultSettings;
-  ctx.reply(`📌 Текущие настройки:
-- model: ${s.model}
-- temperature: ${s.temperature}
-- max_tokens: ${s.max_tokens}
-- system: ${s.system || '(не задано)'}`);
+  userSettings[uid] = userSettings[uid] || { ...defaultSettings };
+  userSettings[uid].model = model;
+  await ctx.answerCbQuery(`✅ Установлено: ${model}`);
+  return ctx.editMessageText(`Модель установлена: ${model}`);
+});
+
+bot.action('setup_temperature', async (ctx) => {
+  await ctx.answerCbQuery();
+  return ctx.editMessageText('Выберите температуру:', Markup.inlineKeyboard([
+    ['0.2', '0.5', '0.7', '1.0'].map(temp =>
+      Markup.button.callback(temp, `select_temp_${temp}`)
+    ),
+  ]));
+});
+
+bot.action(/select_temp_(.+)/, async (ctx) => {
+  const temp = parseFloat(ctx.match[1]);
+  const uid = ctx.from.id;
+  userSettings[uid] = userSettings[uid] || { ...defaultSettings };
+  userSettings[uid].temperature = temp;
+  await ctx.answerCbQuery(`✅ Температура: ${temp}`);
+  return ctx.editMessageText(`Температура установлена: ${temp}`);
+});
+
+bot.action('setup_system', async (ctx) => {
+  const uid = ctx.from.id;
+  await ctx.answerCbQuery();
+  ctx.reply('Введите system prompt (например: "Ты опытный бизнес-консультант"):');
+  bot.once('text', (msgCtx) => {
+    userSettings[uid].system = msgCtx.message.text;
+    msgCtx.reply('✅ System prompt установлен!');
+  });
 });
 
 bot.on('text', async (ctx) => {
@@ -79,4 +90,4 @@ bot.on('text', async (ctx) => {
 });
 
 bot.launch();
-console.log('🤖 Бот запущен');
+console.log('🤖 Бот с UI-настройкой запущен');
