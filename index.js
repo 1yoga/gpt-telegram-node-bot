@@ -113,7 +113,10 @@ bot.on('text', async (ctx) => {
   try {
     ctx.sendChatAction('typing');
     const reply = await chatWithGPT(ctx.message.text, settings);
-    ctx.reply(reply, { parse_mode: 'Markdown' });
+    const chunks = reply.match(/[\s\S]{1,4000}/g) || [];
+    for (const chunk of chunks) {
+      await ctx.reply(chunk, { parse_mode: 'Markdown' });
+    }
   } catch (err) {
     console.error(err.response?.data || err.message);
     ctx.reply('🚫 Ошибка при обращении к GPT. Попробуй позже.');
