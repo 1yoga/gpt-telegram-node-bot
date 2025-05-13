@@ -93,11 +93,9 @@ bot.action(/select_tokens_(\d+)/, async (ctx) => {
 bot.action('setup_system', async (ctx) => {
   const uid = ctx.from.id;
   await ctx.answerCbQuery();
+  userSettings[uid] = userSettings[uid] || { ...defaultSettings };
+  userSettings[uid].awaitingPrompt = true;
   ctx.reply('Введите system prompt (например: "Ты опытный бизнес-консультант"):');
-  bot.once('text', (msgCtx) => {
-    userSettings[uid].system = msgCtx.message.text;
-    msgCtx.reply('✅ System prompt установлен!');
-  });
 });
 
 bot.action('reset_settings', async (ctx) => {
@@ -109,7 +107,15 @@ bot.action('reset_settings', async (ctx) => {
 
 bot.on('text', async (ctx) => {
   const uid = ctx.from.id;
-  const settings = userSettings[uid] || defaultSettings;
+  userSettings[uid] = userSettings[uid] || { ...defaultSettings };
+
+  if (userSettings[uid].awaitingPrompt) {
+    userSettings[uid].system = ctx.message.text;
+    userSettings[uid].awaitingPrompt = false;
+    return ctx.reply('✅ System prompt установлен!');
+  }
+
+  const settings = userSettings[uid];
   try {
     ctx.sendChatAction('typing');
     const reply = await chatWithGPT(ctx.message.text, settings);
