@@ -20,7 +20,9 @@ bot.command('setup', (ctx) => {
     `⚙️ Настройки:
 Модель: ${settings.model}
 Temperature: ${settings.temperature}
-max_tokens: ${settings.max_tokens}`,
+max_tokens: ${settings.max_tokens}
+System Prompt: ${settings.system || 'не задан'}`,
+
     Markup.inlineKeyboard([
       [
         Markup.button.callback('📌 Модель', 'setup_model'),
@@ -43,6 +45,13 @@ bot.action('setup_model', async (ctx) => {
     availableModels.map(model => Markup.button.callback(model, `select_model_${model}`)),
     { columns: 2 }
   ));
+});
+bot.command('cancel', (ctx) => {
+  const uid = ctx.from.id;
+  if (userSettings[uid]) {
+    userSettings[uid].awaitingPrompt = false;
+    ctx.reply('⛔ Ввод system prompt отменён.');
+  }
 });
 
 bot.action(/select_model_(.+)/, async (ctx) => {
