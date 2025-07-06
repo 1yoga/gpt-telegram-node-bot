@@ -130,7 +130,7 @@ bot.on('text', async (ctx) => {
     const reply = await chatWithGPT(ctx.message.text, settings);
     const chunks = reply.match(/[\s\S]{1,4000}/g) || [];
     for (const chunk of chunks) {
-      await ctx.reply(chunk, { parse_mode: 'Markdown' });
+      await ctx.reply(chunk);
     }
   } catch (err) {
     console.error(err.response?.data || err.message);
